@@ -23,19 +23,22 @@ def convert():
         with yt_dlp.YoutubeDL(ydl_opts) as ydl:
             ydl.download([url])
     except Exception as e:
-        return jsonify({"error": str(e)}), 500
+        return jsonify({"error": f"Download failed: {str(e)}"}), 500
 
     try:
         with open(filename, 'rb') as f:
-            r = requests.put(f"https://transfer.sh/{filename}", data=f)
+            headers = {'User-Agent': 'Mozilla/5.0'}
+            r = requests.put(f"https://transfer.sh/{filename}", data=f, headers=headers)
         os.remove(filename)
         return jsonify({"link": r.text})
     except Exception as e:
-        return jsonify({"error": str(e)}), 500
+        return jsonify({"error": f"Upload failed: {str(e)}"}), 500
 
 @app.route('/')
 def home():
-    return 'YT-DLP Flask API is running ✅'
-if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=8000)
+    return '✅ YT-DLP Flask API is running'
 
+if __name__ == "__main__":
+    # 🔧 Récupérer le port depuis les variables d’environnement Railway
+    port = int(os.environ.get("PORT", 8000))
+    app.run(host="0.0.0.0", port=port)
