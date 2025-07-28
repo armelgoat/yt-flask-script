@@ -20,7 +20,7 @@ def convert():
         'format': 'mp4/best'
     }
 
-    # 🥇 Étape 1 – Téléchargement avec yt_dlp
+    # 🥇 Étape 1 – Téléchargement
     try:
         print(f"🎯 DÉBUT DU TÉLÉCHARGEMENT : {url}")
         with yt_dlp.YoutubeDL(ydl_opts) as ydl:
@@ -30,22 +30,28 @@ def convert():
         print("❌ ERREUR yt_dlp :", e)
         return jsonify({"error": f"Download failed: {str(e)}"}), 500
 
-    # 🥈 Étape 2 – Upload vers transfer.sh
+    # 🥈 Étape 2 – Upload vers File.io
     try:
-        print("📤 UPLOAD EN COURS...")
+        print("📤 UPLOAD VERS FILE.IO EN COURS...")
         with open(filename, 'rb') as f:
-            headers = {'User-Agent': 'Mozilla/5.0'}
-            r = requests.put(f"https://transfer.sh/{filename}", data=f, headers=headers)
+            files = {'file': f}
+            r = requests.post("https://file.io", files=files)
         os.remove(filename)
-        print("✅ UPLOAD TERMINÉ")
-        return jsonify({"link": r.text})
+
+        response_data = r.json()
+        if not response_data.get("success"):
+            print("❌ ERREUR file.io :", response_data)
+            return jsonify({"error": "Upload to file.io failed", "details": response_data}), 500
+
+        print("✅ UPLOAD TERMINÉ :", response_data["link"])
+        return jsonify({"link": response_data["link"]})
     except Exception as e:
-        print("❌ ERREUR transfer.sh :", e)
+        print("❌ ERREUR file.io :", e)
         return jsonify({"error": f"Upload failed: {str(e)}"}), 500
 
 @app.route('/')
 def home():
-    return '✅ YT-DLP Flask API is running'
+    return '✅ YT-DLP Flask API with File.io is running'
 
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 8000))
